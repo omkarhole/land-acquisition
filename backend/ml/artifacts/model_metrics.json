@@ -1,0 +1,176 @@
+{
+  "model_version": "v1.0.0",
+  "best_model_architecture": "XGBoost",
+  "training_samples": 2000,
+  "test_samples": 500,
+  "model_comparison": {
+    "Logistic_Regression": {
+      "ROC_AUC": 0.8916,
+      "PR_AUC": 0.9923,
+      "F1_Score": 0.9284,
+      "Precision": 0.9811,
+      "Recall": 0.8811,
+      "Brier_Score": 0.0941
+    },
+    "Random_Forest": {
+      "ROC_AUC": 0.9493,
+      "PR_AUC": 0.9967,
+      "F1_Score": 0.9701,
+      "Precision": 0.9438,
+      "Recall": 0.9979,
+      "Brier_Score": 0.0376
+    },
+    "Gradient_Boosting": {
+      "ROC_AUC": 0.9354,
+      "PR_AUC": 0.9959,
+      "F1_Score": 0.973,
+      "Precision": 0.9513,
+      "Recall": 0.9958,
+      "Brier_Score": 0.0459
+    },
+    "XGBoost": {
+      "ROC_AUC": 0.9532,
+      "PR_AUC": 0.997,
+      "F1_Score": 0.976,
+      "Precision": 0.959,
+      "Recall": 0.9936,
+      "Brier_Score": 0.0384
+    },
+    "LightGBM": {
+      "ROC_AUC": 0.9494,
+      "PR_AUC": 0.9968,
+      "F1_Score": 0.9747,
+      "Precision": 0.9666,
+      "Recall": 0.983,
+      "Brier_Score": 0.0418
+    }
+  },
+  "best_metrics": {
+    "ROC_AUC": 0.9532,
+    "PR_AUC": 0.997,
+    "F1_Score": 0.976,
+    "Precision": 0.959,
+    "Recall": 0.9936,
+    "Brier_Score": 0.0384
+  },
+  "top_feature_importances": [
+    {
+      "feature": "objection_count",
+      "importance": 0.1286
+    },
+    {
+      "feature": "stage_age_days",
+      "importance": 0.0508
+    },
+    {
+      "feature": "compensation_paid_ratio",
+      "importance": 0.0501
+    },
+    {
+      "feature": "current_stage_Stage 6: Land Possession & Handover",
+      "importance": 0.0499
+    },
+    {
+      "feature": "court_stay_flag",
+      "importance": 0.041
+    },
+    {
+      "feature": "project_type_Industrial Smart City Corridor",
+      "importance": 0.038
+    },
+    {
+      "feature": "state_Uttar Pradesh",
+      "importance": 0.0376
+    },
+    {
+      "feature": "document_pending_ratio",
+      "importance": 0.034
+    },
+    {
+      "feature": "pending_document_count",
+      "importance": 0.0325
+    },
+    {
+      "feature": "current_stage_Stage 1: Preliminary Survey & SIA",
+      "importance": 0.0309
+    },
+    {
+      "feature": "district_Nashik",
+      "importance": 0.0305
+    },
+    {
+      "feature": "project_age_days",
+      "importance": 0.0251
+    },
+    {
+      "feature": "current_stage_Stage 3: Section 15 Hearing & Objections",
+      "importance": 0.0244
+    },
+    {
+      "feature": "progress_gap",
+      "importance": 0.0234
+    },
+    {
+      "feature": "project_type_Urban Metro Transit Extension",
+      "importance": 0.0229
+    },
+    {
+      "feature": "days_to_target",
+      "importance": 0.0217
+    },
+    {
+      "feature": "project_type_High-Speed Rail / DFC",
+      "importance": 0.0213
+    },
+    {
+      "feature": "forest_clearance_pending",
+      "importance": 0.0203
+    },
+    {
+      "feature": "state_Rajasthan",
+      "importance": 0.019
+    },
+    {
+      "feature": "state_Gujarat",
+      "importance": 0.0181
+    },
+    {
+      "feature": "project_value_cr",
+      "importance": 0.0173
+    },
+    {
+      "feature": "project_type_Rural Road Connectivity (PMGSY)",
+      "importance": 0.0148
+    },
+    {
+      "feature": "state_Tamil Nadu",
+      "importance": 0.0147
+    },
+    {
+      "feature": "affected_owner_count",
+      "importance": 0.0146
+    },
+    {
+      "feature": "priority_High",
+      "importance": 0.0143
+    }
+  ],
+  "risk_thresholds": {
+    "LOW": [
+      0.0,
+      0.39
+    ],
+    "MEDIUM": [
+      0.4,
+      0.69
+    ],
+    "HIGH": [
+      0.7,
+      0.84
+    ],
+    "CRITICAL": [
+      0.85,
+      1.0
+    ]
+  }
+}

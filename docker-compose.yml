@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  # Optional PostgreSQL database
+  db:
+    image: postgres:16-alpine
+    container_name: sih26017_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sih26017
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres_password_2026}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # FastAPI Backend & ML Service
+  backend:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+    container_name: sih26017_backend
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://app:${DB_PASSWORD:-postgres_password_2026}@db:5432/sih26017
+      JWT_SECRET: ${JWT_SECRET:-sih26017_ministry_rural_dev_secret_key_2026_x7a9q2}
+    ports:
+      - "8000:8000"
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sih26017_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
+volumes:
+  pgdata:

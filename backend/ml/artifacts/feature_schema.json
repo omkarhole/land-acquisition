@@ -1,0 +1,35 @@
+{
+  "numeric_features": [
+    "land_area_hectares",
+    "affected_owner_count",
+    "household_count",
+    "project_value_cr",
+    "compensation_offered_cr",
+    "compensation_paid_ratio",
+    "pending_document_count",
+    "document_pending_ratio",
+    "pending_approval_count",
+    "approval_age_days",
+    "objection_count",
+    "court_stay_flag",
+    "legal_issue_count",
+    "utility_shift_pending",
+    "forest_clearance_pending",
+    "railway_crossing_pending",
+    "stage_age_days",
+    "project_age_days",
+    "days_to_target",
+    "overall_progress_pct",
+    "progress_gap",
+    "district_delay_rate",
+    "past_delay_count"
+  ],
+  "categorical_features": [
+    "state",
+    "district",
+    "project_type",
+    "priority",
+    "current_stage"
+  ],
+  "target": "delay_flag"
+}
