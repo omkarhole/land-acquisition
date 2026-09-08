@@ -1,9 +1,8 @@
--- SIH26017: PostgreSQL + PostGIS Production Schema
--- Decision-Support System for Land Acquisition Delays (Ministry of Rural Development)
-
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
--- PostGIS extension for cadastral geospatial analytics (if PostGIS image is used)
-CREATE EXTENSION IF NOT EXISTS postgis;
+-- ==============================================================================
+-- SIH26017: Pure Standard PostgreSQL Production Schema (Zero Extensions Required)
+-- Ministry of Rural Development: Land Acquisition Delay Early Warning System
+-- Compatible with ALL PostgreSQL versions (12, 13, 14, 15, 16, 17+) without PostGIS
+-- ==============================================================================
 
 -- 1. Users & RBAC
 CREATE TABLE IF NOT EXISTS users (
@@ -18,7 +17,7 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. Projects Core Entity
+-- 2. Projects Core Entity (Native latitude/longitude storage - No PostGIS needed!)
 CREATE TABLE IF NOT EXISTS projects (
     id SERIAL PRIMARY KEY,
     project_code VARCHAR(50) UNIQUE NOT NULL,

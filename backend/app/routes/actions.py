@@ -90,7 +90,7 @@ def update_action(
             # Recalculate risk on project to record post-action improvement
             project = db.query(Project).filter(Project.id == action.project_id).first()
             if project:
-                prob, _, _, _ = predict_project_risk(project)
+                prob, risk_level, delay_days, explanations, recommendations = predict_project_risk(project)
                 action.post_action_risk = round(prob, 3)
 
     if data.outcome:

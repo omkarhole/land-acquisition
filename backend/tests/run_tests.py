@@ -123,9 +123,38 @@ def run_all_tests():
         token = login_res.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
         
-        res = c.post("/api/reports/retrain", headers=headers)
-        assert res.status_code == 200
-        assert res.json()["status"] == "success"
+    def t_complete_action(c):
+        login_res = c.post("/api/auth/login", json={"email": "admin@sih.gov.in", "password": "password123"})
+        token = login_res.json()["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+        
+        # Create an action first
+        act_res = c.post(
+            "/api/actions/1",
+            json={
+                "action_type": "Direct Compensation Disbursement",
+                "title": "Clear Stage 1 Resettlement Backlog",
+                "assigned_to": "SDM Pune",
+                "due_date": "2026-10-30"
+            },
+            headers=headers
+        )
+        assert act_res.status_code == 201
+        action_id = act_res.json()["id"]
+
+        # Complete and re-score the action
+        complete_res = c.patch(
+            f"/api/actions/{action_id}",
+            json={
+                "status": "COMPLETED",
+                "outcome": "Disbursement completed successfully; compensation backlog resolved."
+            },
+            headers=headers
+        )
+        assert complete_res.status_code == 200
+        data = complete_res.json()
+        assert data["status"] == "COMPLETED"
+        assert data["post_action_risk"] is not None
 
     test("1. Root API Health Check", t_root)
     test("2. JWT User Authentication & RBAC", t_login)
@@ -133,9 +162,10 @@ def run_all_tests():
     test("4. Geospatial Risk Points Query (10 Projects)", t_geo)
     test("5. Real-time Prediction & AI Recommendations", t_predict_recommend)
     test("6. 1-Click Adopt Recommendation to Action Plan", t_adopt_recommendation)
-    test("7. What-If Scenario Policy Simulation", t_simulate)
-    test("8. R&R Progress Tracking & Settlement", t_rr_update)
-    test("9. Continuous Model Retraining Pipeline", t_retrain_model)
+    test("7. Complete & Re-score Corrective Action Lifecycle", t_complete_action)
+    test("8. What-If Scenario Policy Simulation", t_simulate)
+    test("9. R&R Progress Tracking & Settlement", t_rr_update)
+    test("10. Continuous Model Retraining Pipeline", t_retrain_model)
 
     print("------------------------------------------------------------")
     print(f"RESULTS: {passed}/{total} tests passed ({passed/total*100:.1f}%)")

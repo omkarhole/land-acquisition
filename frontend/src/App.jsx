@@ -13,11 +13,61 @@ import { ReportsPage } from './pages/ReportsPage';
 import { LoginPage } from './pages/LoginPage';
 import { api } from './services/api';
 
+// Map URL paths to tab IDs and vice-versa
+const PATH_TO_TAB = {
+  '/': 'dashboard',
+  '/dashboard': 'dashboard',
+  '/map': 'map',
+  '/projects': 'projects',
+  '/alerts': 'alerts',
+  '/interventions': 'interventions',
+  '/reports': 'reports',
+  '/governance': 'governance',
+};
+
+const TAB_TO_PATH = {
+  'dashboard': '/',
+  'map': '/map',
+  'projects': '/projects',
+  'alerts': '/alerts',
+  'interventions': '/interventions',
+  'reports': '/reports',
+  'governance': '/governance',
+  'project-detail': '/projects', // detail shares the projects path
+};
+
+function getTabFromPath() {
+  const path = window.location.pathname.replace(/\/+$/, '') || '/';
+  return PATH_TO_TAB[path] || 'dashboard';
+}
+
 function MainApp() {
   const { user, loading } = useAuth();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTabState] = useState(getTabFromPath);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [activeAlertsCount, setActiveAlertsCount] = useState(0);
+
+  // Wrapper that also updates the browser URL
+  const setActiveTab = (tab) => {
+    setActiveTabState(tab);
+    const targetPath = TAB_TO_PATH[tab] || '/';
+    if (window.location.pathname !== targetPath) {
+      window.history.pushState({ tab }, '', targetPath);
+    }
+  };
+
+  // Handle browser back / forward buttons
+  useEffect(() => {
+    const onPopState = (e) => {
+      const tab = e.state?.tab || getTabFromPath();
+      setActiveTabState(tab);
+      if (tab !== 'project-detail') setSelectedProjectId(null);
+    };
+    window.addEventListener('popstate', onPopState);
+    // Replace current history entry with tab info so first back works
+    window.history.replaceState({ tab: activeTab }, '', window.location.pathname);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchAlertCount = async () => {
     try {

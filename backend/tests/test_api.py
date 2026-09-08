@@ -130,3 +130,18 @@ def test_alerts_and_actions():
     assert action_resp.status_code == 201
     action_data = action_resp.json()
     assert action_data["status"] == "OPEN"
+    action_id = action_data["id"]
+
+    # Complete & Re-score the action
+    complete_resp = client.patch(
+        f"/api/actions/{action_id}",
+        json={
+            "status": "COMPLETED",
+            "outcome": "Survey backlog completed; all valuation documents verified."
+        },
+        headers=headers
+    )
+    assert complete_resp.status_code == 200
+    comp_data = complete_resp.json()
+    assert comp_data["status"] == "COMPLETED"
+    assert comp_data["post_action_risk"] is not None
