@@ -1,5 +1,6 @@
 """
 Pydantic Schemas for SIH26017 Request/Response Validation.
+Includes R&R, Possession, Stakeholders, Recommendations, and Model Retrain schemas.
 """
 
 from datetime import date, datetime
@@ -9,7 +10,7 @@ from pydantic import BaseModel, EmailStr, Field
 
 # ---------------- User & Auth ----------------
 class UserLogin(BaseModel):
-    email: EmailStr
+    email: str
     password: str
 
 class UserOut(BaseModel):
@@ -93,6 +94,87 @@ class CompensationUpdate(BaseModel):
     status: Optional[str] = None
 
 
+# 🌟 Rehabilitation & Resettlement Schemas
+class RehabilitationOut(BaseModel):
+    id: int
+    project_id: int
+    total_families: int
+    families_rehabilitated: int
+    pending_cases: int
+    progress_pct: float
+    status: str
+    resettlement_site_status: Optional[str] = None
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class RehabilitationUpdate(BaseModel):
+    families_rehabilitated: int
+    status: Optional[str] = None
+    resettlement_site_status: Optional[str] = None
+
+
+# 🌟 Possession & Land Parcels Schemas
+class PossessionOut(BaseModel):
+    id: int
+    project_id: int
+    total_parcels: int
+    acquired_parcels: int
+    pending_parcels: int
+    disputed_parcels: int
+    possession_status: str
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class PossessionUpdate(BaseModel):
+    acquired_parcels: int
+    disputed_parcels: Optional[int] = None
+    possession_status: Optional[str] = None
+
+
+# 🌟 Stakeholder Responsiveness Schemas
+class StakeholderOut(BaseModel):
+    id: int
+    project_id: int
+    department_name: str
+    pending_actions: int
+    avg_response_days: int
+    responsiveness_score: float
+    last_interaction: Optional[date] = None
+
+    class Config:
+        from_attributes = True
+
+class StakeholderCreate(BaseModel):
+    department_name: str
+    pending_actions: int = 1
+    avg_response_days: int = 30
+    responsiveness_score: float = 0.7
+
+
+# 🌟 AI Predictive Recommendations Schemas
+class RecommendationOut(BaseModel):
+    id: int
+    project_id: int
+    title: str
+    category: str
+    urgency: str
+    expected_risk_reduction_pct: float
+    action_steps: str
+    status: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class RecommendationAdoptRequest(BaseModel):
+    assigned_to: str
+    due_date: date
+
+
 # ---------------- Predictions & Explanations ----------------
 class ExplanationOut(BaseModel):
     id: Optional[int] = None
@@ -100,7 +182,7 @@ class ExplanationOut(BaseModel):
     feature_label: str
     value_display: Optional[str] = None
     contribution: float
-    direction: str  # up, down
+    direction: str
     impact_text: Optional[str] = None
 
     class Config:
@@ -115,6 +197,7 @@ class PredictionOut(BaseModel):
     model_version: str
     created_at: Optional[datetime] = None
     top_factors: List[ExplanationOut] = []
+    recommendations: List[RecommendationOut] = []
 
     class Config:
         from_attributes = True
@@ -124,10 +207,13 @@ class PredictionRequest(BaseModel):
 
 class SimulationRequest(BaseModel):
     compensation_paid_ratio: Optional[float] = Field(None, ge=0.0, le=1.0)
+    rr_progress_pct: Optional[float] = Field(None, ge=0.0, le=100.0)
     pending_document_count: Optional[int] = Field(None, ge=0)
     objection_count: Optional[int] = Field(None, ge=0)
+    ownership_conflict_count: Optional[int] = Field(None, ge=0)
     court_stay_flag: Optional[bool] = None
     stage_age_days: Optional[int] = Field(None, ge=0)
+    department_responsiveness_score: Optional[float] = Field(None, ge=0.0, le=1.0)
     utility_shift_pending: Optional[bool] = None
     forest_clearance_pending: Optional[bool] = None
 
@@ -137,7 +223,7 @@ class SimulationOut(BaseModel):
     simulated_probability: float
     simulated_risk_level: str
     probability_delta: float
-    risk_direction: str  # reduced, increased, unchanged
+    risk_direction: str
     simulated_factors: List[ExplanationOut]
 
 
@@ -206,6 +292,7 @@ class ProjectCreate(BaseModel):
     target_date: date
     current_stage: str = "Stage 1: Preliminary Survey & SIA"
     objection_count: int = 0
+    ownership_conflict_count: int = 0
     court_stay_flag: bool = False
     utility_shift_pending: bool = False
     forest_clearance_pending: bool = False
@@ -219,6 +306,7 @@ class ProjectUpdate(BaseModel):
     overall_progress_pct: Optional[float] = None
     compensation_paid_cr: Optional[float] = None
     objection_count: Optional[int] = None
+    ownership_conflict_count: Optional[int] = None
     court_stay_flag: Optional[bool] = None
     utility_shift_pending: Optional[bool] = None
     forest_clearance_pending: Optional[bool] = None
@@ -255,6 +343,10 @@ class ProjectDetailOut(ProjectOut):
     stages: List[StageOut] = []
     documents: List[DocumentOut] = []
     compensations: List[CompensationOut] = []
+    rehabilitations: List[RehabilitationOut] = []
+    possessions: List[PossessionOut] = []
+    stakeholders: List[StakeholderOut] = []
+    recommendations: List[RecommendationOut] = []
     alerts: List[AlertOut] = []
     actions: List[ActionOut] = []
 
@@ -273,6 +365,8 @@ class DashboardSummaryOut(BaseModel):
     pending_actions_count: int
     total_land_area_ha: float
     total_compensation_cr: float
+    national_rr_progress_pct: float
+    active_recommendations_count: int
 
 class GeoRiskPointOut(BaseModel):
     id: int
@@ -287,12 +381,6 @@ class GeoRiskPointOut(BaseModel):
     risk_level: str
     current_stage: str
     progress_pct: float
-
-class RiskTrendItem(BaseModel):
-    month: str
-    average_risk: float
-    high_risk_count: int
-    total_predictions: int
 
 class AuditLogOut(BaseModel):
     id: int

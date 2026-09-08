@@ -1,10 +1,13 @@
 """
 SQLAlchemy ORM Data Models for SIH26017 Land Acquisition Analytics.
+Includes Projects, LARR Stages, Documents, Compensation,
+Rehabilitation & Resettlement (R&R), Land Possession, Stakeholders,
+AI Recommendations, Predictions, Alerts, Actions, and Security Audit Logs.
 """
 
 from datetime import datetime
 from sqlalchemy import (
-    Column, Integer, String, Float, Text, Date, DateTime, Boolean, ForeignKey
+    Column, Integer, String, Float, Text, Date, DateTime, Boolean, ForeignKey, Index
 )
 from sqlalchemy.orm import relationship
 from backend.app.database import Base
@@ -34,8 +37,8 @@ class Project(Base):
     district = Column(String(100), nullable=False, index=True)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
-    project_type = Column(String(100), nullable=False)  # Highway, Railway, Irrigation, etc.
-    priority = Column(String(50), default="Normal")  # Normal, High, Critical, Cabinet Fast-Track
+    project_type = Column(String(100), nullable=False)
+    priority = Column(String(50), default="Normal")
     land_area_hectares = Column(Float, nullable=False, default=0.0)
     affected_owner_count = Column(Integer, nullable=False, default=0)
     household_count = Column(Integer, nullable=False, default=0)
@@ -45,12 +48,13 @@ class Project(Base):
     
     start_date = Column(Date, nullable=False)
     target_date = Column(Date, nullable=False)
-    status = Column(String(50), default="In Progress")  # In Progress, Completed, Delayed, On Hold
+    status = Column(String(50), default="In Progress")
     current_stage = Column(String(100), default="Stage 1: Preliminary Survey & SIA")
     overall_progress_pct = Column(Float, default=0.0)
     
-    # Process attributes
+    # Process friction attributes
     objection_count = Column(Integer, default=0)
+    ownership_conflict_count = Column(Integer, default=0)
     court_stay_flag = Column(Boolean, default=False)
     utility_shift_pending = Column(Boolean, default=False)
     forest_clearance_pending = Column(Boolean, default=False)
@@ -65,6 +69,10 @@ class Project(Base):
     stages = relationship("Stage", back_populates="project", cascade="all, delete-orphan", order_by="Stage.stage_order")
     documents = relationship("Document", back_populates="project", cascade="all, delete-orphan")
     compensations = relationship("Compensation", back_populates="project", cascade="all, delete-orphan")
+    rehabilitations = relationship("Rehabilitation", back_populates="project", cascade="all, delete-orphan")
+    possessions = relationship("Possession", back_populates="project", cascade="all, delete-orphan")
+    stakeholders = relationship("Stakeholder", back_populates="project", cascade="all, delete-orphan")
+    recommendations = relationship("Recommendation", back_populates="project", cascade="all, delete-orphan")
     predictions = relationship("Prediction", back_populates="project", cascade="all, delete-orphan", order_by="desc(Prediction.created_at)")
     alerts = relationship("Alert", back_populates="project", cascade="all, delete-orphan", order_by="desc(Alert.created_at)")
     actions = relationship("Action", back_populates="project", cascade="all, delete-orphan", order_by="desc(Action.created_at)")
@@ -80,7 +88,7 @@ class Stage(Base):
     start_date = Column(Date, nullable=True)
     target_date = Column(Date, nullable=True)
     completion_date = Column(Date, nullable=True)
-    status = Column(String(50), default="Pending")  # Completed, In Progress, Pending, Delayed
+    status = Column(String(50), default="Pending")
     days_in_stage = Column(Integer, default=0)
     remarks = Column(Text, nullable=True)
 
@@ -92,9 +100,9 @@ class Document(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
-    document_type = Column(String(100), nullable=False)  # SIA Report, Section 11 Gazette, Form 19, NOC Forest, Title Verification
+    document_type = Column(String(100), nullable=False)
     title = Column(String(200), nullable=False)
-    status = Column(String(50), default="Pending")  # Approved, Pending, Rejected, Under Review
+    status = Column(String(50), default="Pending")
     remarks = Column(Text, nullable=True)
     uploaded_at = Column(DateTime, default=datetime.utcnow)
 
@@ -111,10 +119,75 @@ class Compensation(Base):
     disbursed_amount_cr = Column(Float, default=0.0)
     pending_amount_cr = Column(Float, default=0.0)
     disbursement_pct = Column(Float, default=0.0)
-    status = Column(String(50), default="In Progress")  # Initiated, In Progress, Disbursed, Disputed
+    status = Column(String(50), default="In Progress")
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     project = relationship("Project", back_populates="compensations")
+
+
+# 🌟 Rehabilitation & Resettlement (R&R)
+class Rehabilitation(Base):
+    __tablename__ = "rehabilitation"
+
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
+    total_families = Column(Integer, default=0)
+    families_rehabilitated = Column(Integer, default=0)
+    pending_cases = Column(Integer, default=0)
+    progress_pct = Column(Float, default=0.0)
+    status = Column(String(50), default="Initiated")
+    resettlement_site_status = Column(String(100), default="Site Identification Underway")
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    project = relationship("Project", back_populates="rehabilitations")
+
+
+# 🌟 Land Possession & Cadastral Parcels
+class Possession(Base):
+    __tablename__ = "possession"
+
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
+    total_parcels = Column(Integer, default=0)
+    acquired_parcels = Column(Integer, default=0)
+    pending_parcels = Column(Integer, default=0)
+    disputed_parcels = Column(Integer, default=0)
+    possession_status = Column(String(50), default="Pending")
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    project = relationship("Project", back_populates="possessions")
+
+
+# 🌟 Inter-Departmental Collaborating Line Departments (Stakeholders)
+class Stakeholder(Base):
+    __tablename__ = "stakeholders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
+    department_name = Column(String(100), nullable=False)
+    pending_actions = Column(Integer, default=0)
+    avg_response_days = Column(Integer, default=30)
+    responsiveness_score = Column(Float, default=0.8)
+    last_interaction = Column(Date, nullable=True)
+
+    project = relationship("Project", back_populates="stakeholders")
+
+
+# 🌟 AI Predictive Recommendations Engine
+class Recommendation(Base):
+    __tablename__ = "recommendations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
+    title = Column(String(200), nullable=False)
+    category = Column(String(50), default="Administrative")
+    urgency = Column(String(20), default="HIGH")
+    expected_risk_reduction_pct = Column(Float, default=0.0)
+    action_steps = Column(Text, nullable=False)
+    status = Column(String(30), default="SUGGESTED")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    project = relationship("Project", back_populates="recommendations")
 
 
 class Prediction(Base):
@@ -123,9 +196,9 @@ class Prediction(Base):
     id = Column(Integer, primary_key=True, index=True)
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
     probability = Column(Float, nullable=False)
-    risk_level = Column(String(50), nullable=False)  # LOW, MEDIUM, HIGH, CRITICAL
+    risk_level = Column(String(50), nullable=False)
     estimated_delay_days = Column(Integer, default=0)
-    model_version = Column(String(50), default="xgb-v1.0.0")
+    model_version = Column(String(50), default="xgb-v1.2.0")
     created_at = Column(DateTime, default=datetime.utcnow)
 
     project = relationship("Project", back_populates="predictions")
@@ -141,7 +214,7 @@ class Explanation(Base):
     feature_label = Column(String(150), nullable=False)
     value_display = Column(String(100), nullable=True)
     contribution = Column(Float, default=0.0)
-    direction = Column(String(10), default="up")  # up (increases risk), down (reduces risk)
+    direction = Column(String(10), default="up")
     impact_text = Column(Text, nullable=True)
 
     prediction = relationship("Prediction", back_populates="explanations")
@@ -152,10 +225,10 @@ class Alert(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
-    severity = Column(String(30), default="HIGH")  # LOW, MEDIUM, HIGH, CRITICAL
+    severity = Column(String(30), default="HIGH")
     alert_type = Column(String(100), nullable=False)
     message = Column(Text, nullable=False)
-    status = Column(String(30), default="ACTIVE")  # ACTIVE, ACKNOWLEDGED, RESOLVED
+    status = Column(String(30), default="ACTIVE")
     created_at = Column(DateTime, default=datetime.utcnow)
 
     project = relationship("Project", back_populates="alerts")
@@ -171,7 +244,7 @@ class Action(Base):
     description = Column(Text, nullable=True)
     assigned_to = Column(String(100), nullable=False)
     due_date = Column(Date, nullable=False)
-    status = Column(String(50), default="OPEN")  # OPEN, IN_PROGRESS, COMPLETED
+    status = Column(String(50), default="OPEN")
     outcome = Column(Text, nullable=True)
     initial_risk = Column(Float, nullable=True)
     post_action_risk = Column(Float, nullable=True)
@@ -186,7 +259,7 @@ class AuditLog(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_email = Column(String(120), nullable=False)
-    action = Column(String(100), nullable=False)  # CREATE_PROJECT, RUN_PREDICTION, RECORD_ACTION, etc.
+    action = Column(String(100), nullable=False)
     entity_type = Column(String(50), nullable=False)
     entity_id = Column(String(100), nullable=True)
     details = Column(Text, nullable=True)

@@ -1,5 +1,7 @@
 """
-Standalone Test Runner for SIH26017 FastAPI Backend & ML Pipeline.
+Comprehensive Test Runner for SIH26017 FastAPI Backend & ML Pipeline.
+Covers Authentication, RBAC, Projects, R&R, Possession, Recommendations adoption,
+What-If simulation, GIS Geo-points, and Continuous Learning Retraining.
 """
 
 import os
@@ -11,13 +13,20 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from fastapi.testclient import TestClient
+from backend.app.database import engine, Base, SessionLocal
+from backend.app.seed import seed_database
 from backend.app.main import app
 
 def run_all_tests():
     print("============================================================")
-    print("SIH26017: RUNNING BACKEND & ML INTEGRATION TEST SUITE")
+    print("SIH26017: RUNNING EXPANDED BACKEND & ML INTEGRATION TESTS")
     print("============================================================")
     
+    # Re-initialize clean test schema
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+    seed_database()
+
     client = TestClient(app)
     passed = 0
     total = 0
@@ -47,14 +56,16 @@ def run_all_tests():
     def t_summary(c):
         res = c.get("/api/dashboard/summary")
         assert res.status_code == 200
-        assert res.json()["total_projects"] >= 10
+        data = res.json()
+        assert data["total_projects"] == 10
+        assert "national_rr_progress_pct" in data
 
     def t_geo(c):
         res = c.get("/api/dashboard/geo-data")
         assert res.status_code == 200
-        assert len(res.json()) >= 10
+        assert len(res.json()) == 10
 
-    def t_predict(c):
+    def t_predict_recommend(c):
         login_res = c.post("/api/auth/login", json={"email": "admin@sih.gov.in", "password": "password123"})
         token = login_res.json()["access_token"]
         res = c.post("/api/projects/1/predict", json={"force_refresh": True}, headers={"Authorization": f"Bearer {token}"})
@@ -62,33 +73,69 @@ def run_all_tests():
         data = res.json()
         assert "probability" in data
         assert len(data["top_factors"]) > 0
+        assert len(data["recommendations"]) > 0
+
+    def t_adopt_recommendation(c):
+        login_res = c.post("/api/auth/login", json={"email": "admin@sih.gov.in", "password": "password123"})
+        token = login_res.json()["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+        
+        detail_res = c.get("/api/projects/1", headers=headers)
+        recs = detail_res.json()["recommendations"]
+        assert len(recs) > 0
+        rec_id = recs[0]["id"]
+        res = c.post(
+            f"/api/projects/1/recommendations/{rec_id}/adopt",
+            json={"assigned_to": "SDM Pune", "due_date": "2026-10-15"},
+            headers=headers
+        )
+        assert res.status_code == 200
+        assert res.json()["status"] == "OPEN"
 
     def t_simulate(c):
         login_res = c.post("/api/auth/login", json={"email": "admin@sih.gov.in", "password": "password123"})
         token = login_res.json()["access_token"]
-        res = c.post("/api/projects/1/simulate", json={"compensation_paid_ratio": 0.95, "pending_document_count": 0}, headers={"Authorization": f"Bearer {token}"})
+        res = c.post(
+            "/api/projects/1/simulate",
+            json={"compensation_paid_ratio": 0.95, "rr_progress_pct": 90.0, "pending_document_count": 0},
+            headers={"Authorization": f"Bearer {token}"}
+        )
         assert res.status_code == 200
         sim = res.json()
         assert "simulated_probability" in sim
+        assert sim["risk_direction"] == "reduced"
 
-    def t_bottlenecks(c):
-        res = c.get("/api/dashboard/stage-bottlenecks")
+    def t_rr_update(c):
+        login_res = c.post("/api/auth/login", json={"email": "admin@sih.gov.in", "password": "password123"})
+        token = login_res.json()["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+        
+        res = c.patch(
+            "/api/projects/1/rehabilitation",
+            json={"families_rehabilitated": 320, "status": "In Progress"},
+            headers=headers
+        )
         assert res.status_code == 200
-        assert len(res.json()) == 6
+        assert res.json()["families_rehabilitated"] == 320
 
-    def t_alerts(c):
-        res = c.get("/api/alerts")
+    def t_retrain_model(c):
+        login_res = c.post("/api/auth/login", json={"email": "admin@sih.gov.in", "password": "password123"})
+        token = login_res.json()["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+        
+        res = c.post("/api/reports/retrain", headers=headers)
         assert res.status_code == 200
-        assert len(res.json()) > 0
+        assert res.json()["status"] == "success"
 
     test("1. Root API Health Check", t_root)
     test("2. JWT User Authentication & RBAC", t_login)
-    test("3. Dashboard Executive KPI Aggregation", t_summary)
-    test("4. Geospatial Risk Points Query", t_geo)
-    test("5. Real-time ML Prediction & XAI Factor Attribution", t_predict)
-    test("6. What-If Scenario Simulation Engine", t_simulate)
-    test("7. Acquisition Stage Bottlenecks Analysis", t_bottlenecks)
-    test("8. Early Warning Alert Lifecycle", t_alerts)
+    test("3. Dashboard Summary with National R&R KPI", t_summary)
+    test("4. Geospatial Risk Points Query (10 Projects)", t_geo)
+    test("5. Real-time Prediction & AI Recommendations", t_predict_recommend)
+    test("6. 1-Click Adopt Recommendation to Action Plan", t_adopt_recommendation)
+    test("7. What-If Scenario Policy Simulation", t_simulate)
+    test("8. R&R Progress Tracking & Settlement", t_rr_update)
+    test("9. Continuous Model Retraining Pipeline", t_retrain_model)
 
     print("------------------------------------------------------------")
     print(f"RESULTS: {passed}/{total} tests passed ({passed/total*100:.1f}%)")

@@ -1,5 +1,6 @@
 """
-Projects & Land Acquisition Management Router for SIH26017.
+Expanded Projects & Land Acquisition Management Router for SIH26017.
+Includes R&R tracking, Possession tracking, Stakeholders matrix, and Recommendations adoption.
 """
 
 from typing import List, Optional
@@ -10,15 +11,19 @@ from sqlalchemy import or_, desc
 
 from backend.app.database import get_db
 from backend.app.models.models import (
-    Project, Stage, Document, Compensation, Prediction, Explanation, Alert, Action, AuditLog, User
+    Project, Stage, Document, Compensation, Rehabilitation, Possession,
+    Stakeholder, Recommendation, Prediction, Explanation, Alert, Action, AuditLog, User
 )
 from backend.app.schemas.schemas import (
     ProjectOut, ProjectDetailOut, ProjectCreate, ProjectUpdate,
     PredictionOut, PredictionRequest, SimulationRequest, SimulationOut,
-    DocumentCreate, DocumentOut, StageUpdate, StageOut, CompensationUpdate, CompensationOut
+    DocumentCreate, DocumentOut, StageUpdate, StageOut, CompensationUpdate, CompensationOut,
+    RehabilitationOut, RehabilitationUpdate, PossessionOut, PossessionUpdate,
+    StakeholderOut, StakeholderCreate, RecommendationOut, RecommendationAdoptRequest, ActionOut,
+    AlertOut, ExplanationOut
 )
 from backend.app.services.auth_service import get_current_user
-from backend.app.services.ml_service import predict_project_risk, simulate_what_if, determine_risk_level
+from backend.app.services.ml_service import predict_project_risk, simulate_what_if
 
 router = APIRouter(prefix="/api/projects", tags=["Projects"])
 
@@ -45,7 +50,7 @@ STANDARD_DOCS = [
 
 @router.get("", response_model=List[ProjectOut])
 def list_projects(
-    search: Optional[str] = Query(None, description="Search by title or project code"),
+    search: Optional[str] = Query(None),
     state: Optional[str] = Query(None),
     district: Optional[str] = Query(None),
     project_type: Optional[str] = Query(None),
@@ -69,7 +74,6 @@ def list_projects(
 
     projects = query.order_by(desc(Project.created_at)).all()
 
-    # Attach latest prediction to output
     results = []
     for p in projects:
         p_dict = ProjectOut.model_validate(p)
@@ -77,11 +81,12 @@ def list_projects(
             latest_pred = p.predictions[0]
             p_dict.latest_prediction = PredictionOut.model_validate(latest_pred)
             p_dict.latest_prediction.top_factors = [
-                Explanation.model_validate(e) if hasattr(Explanation, "model_validate") else e
-                for e in latest_pred.explanations
+                ExplanationOut.model_validate(e) for e in latest_pred.explanations
+            ]
+            p_dict.latest_prediction.recommendations = [
+                RecommendationOut.model_validate(rc) for rc in p.recommendations
             ]
         
-        # Risk level filter if requested
         if risk_level:
             if not p.predictions or p.predictions[0].risk_level.upper() != risk_level.upper():
                 continue
@@ -96,7 +101,6 @@ def create_project(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Check duplicate code
     existing = db.query(Project).filter(Project.project_code == data.project_code).first()
     if existing:
         raise HTTPException(status_code=400, detail="Project code already exists.")
@@ -122,6 +126,7 @@ def create_project(
         current_stage=data.current_stage,
         overall_progress_pct=10.0,
         objection_count=data.objection_count,
+        ownership_conflict_count=data.ownership_conflict_count,
         court_stay_flag=data.court_stay_flag,
         utility_shift_pending=data.utility_shift_pending,
         forest_clearance_pending=data.forest_clearance_pending,
@@ -132,30 +137,24 @@ def create_project(
     db.add(project)
     db.flush()
 
-    # Create standard 6 stages
+    # Create 6 stages
     for order, stage_name, duration in STANDARD_STAGES:
-        stage_status = "In Progress" if order == 1 else "Pending"
         st = Stage(
             project_id=project.id,
             stage_order=order,
             stage_name=stage_name,
             start_date=data.start_date if order == 1 else None,
-            status=stage_status,
+            status="In Progress" if order == 1 else "Pending",
             days_in_stage=15 if order == 1 else 0
         )
         db.add(st)
 
-    # Create standard documents
+    # Create documents
     for doc_type, doc_title in STANDARD_DOCS:
-        doc = Document(
-            project_id=project.id,
-            document_type=doc_type,
-            title=doc_title,
-            status="Pending"
-        )
+        doc = Document(project_id=project.id, document_type=doc_type, title=doc_title, status="Pending")
         db.add(doc)
 
-    # Create initial compensation record
+    # Create compensation record
     comp = Compensation(
         project_id=project.id,
         beneficiary_count=data.affected_owner_count,
@@ -166,16 +165,53 @@ def create_project(
         status="Initiated"
     )
     db.add(comp)
+
+    # Create R&R record
+    rr = Rehabilitation(
+        project_id=project.id,
+        total_families=data.household_count,
+        families_rehabilitated=0,
+        pending_cases=data.household_count,
+        progress_pct=0.0,
+        status="Initiated",
+        resettlement_site_status="Site Identification Underway"
+    )
+    db.add(rr)
+
+    # Create Possession record
+    total_p = max(10, int(data.land_area_hectares * 8))
+    pos = Possession(
+        project_id=project.id,
+        total_parcels=total_p,
+        acquired_parcels=0,
+        pending_parcels=total_p,
+        disputed_parcels=data.ownership_conflict_count * 2,
+        possession_status="Joint Measurement Survey"
+    )
+    db.add(pos)
+
+    # Create default Stakeholders
+    for dept, days, resp in [("State Electricity Board", 45, 0.6), ("Forest & Wildlife Dept", 60, 0.5), ("District Revenue Office", 25, 0.85)]:
+        stk = Stakeholder(
+            project_id=project.id,
+            department_name=dept,
+            pending_actions=2,
+            avg_response_days=days,
+            responsiveness_score=resp,
+            last_interaction=date.today()
+        )
+        db.add(stk)
+
     db.flush()
 
-    # Run initial prediction
-    prob, risk_level, delay_days, explanations = predict_project_risk(project)
+    # Run Prediction & AI Recommendations
+    prob, risk_level, delay_days, explanations, recommendations = predict_project_risk(project)
     pred = Prediction(
         project_id=project.id,
         probability=prob,
         risk_level=risk_level,
         estimated_delay_days=delay_days,
-        model_version="xgb-v1.0.0"
+        model_version="xgb-v1.2.0"
     )
     db.add(pred)
     db.flush()
@@ -192,18 +228,28 @@ def create_project(
         )
         db.add(expl)
 
-    # Generate alert if high risk
+    for rec in recommendations:
+        recom = Recommendation(
+            project_id=project.id,
+            title=rec["title"],
+            category=rec["category"],
+            urgency=rec["urgency"],
+            expected_risk_reduction_pct=rec["expected_risk_reduction_pct"],
+            action_steps=rec["action_steps"],
+            status="SUGGESTED"
+        )
+        db.add(recom)
+
     if prob >= 0.70:
         alert = Alert(
             project_id=project.id,
             severity="CRITICAL" if prob >= 0.85 else "HIGH",
             alert_type="EARLY_WARNING_DELAY_RISK",
-            message=f"New project {project.project_code} initialized with elevated delay risk ({int(prob*100)}%). Action plan recommended.",
+            message=f"New project {project.project_code} initialized with elevated delay risk ({int(prob*100)}%). {recommendations[0]['title'] if recommendations else 'Action plan recommended.'}",
             status="ACTIVE"
         )
         db.add(alert)
 
-    # Audit log
     audit = AuditLog(
         user_email=current_user.email,
         action="CREATE_PROJECT",
@@ -228,21 +274,25 @@ def get_project_detail(project_id: int, db: Session = Depends(get_db)):
     detail.stages = [StageOut.model_validate(s) for s in project.stages]
     detail.documents = [DocumentOut.model_validate(d) for d in project.documents]
     detail.compensations = [CompensationOut.model_validate(c) for c in project.compensations]
+    detail.rehabilitations = [RehabilitationOut.model_validate(r) for r in project.rehabilitations]
+    detail.possessions = [PossessionOut.model_validate(p) for p in project.possessions]
+    detail.stakeholders = [StakeholderOut.model_validate(st) for st in project.stakeholders]
+    detail.recommendations = [RecommendationOut.model_validate(rc) for rc in project.recommendations]
     detail.alerts = [
-        {
-            "id": a.id,
-            "project_id": a.project_id,
-            "project_title": project.title,
-            "project_code": project.project_code,
-            "severity": a.severity,
-            "alert_type": a.alert_type,
-            "message": a.message,
-            "status": a.status,
-            "created_at": a.created_at
-        }
+        AlertOut(
+            id=a.id,
+            project_id=a.project_id,
+            project_title=project.title,
+            project_code=project.project_code,
+            severity=a.severity,
+            alert_type=a.alert_type,
+            message=a.message,
+            status=a.status,
+            created_at=a.created_at
+        )
         for a in project.alerts
     ]
-    detail.actions = [a for a in project.actions]
+    detail.actions = [ActionOut.model_validate(a) for a in project.actions]
 
     if project.predictions:
         latest = project.predictions[0]
@@ -255,51 +305,22 @@ def get_project_detail(project_id: int, db: Session = Depends(get_db)):
             model_version=latest.model_version,
             created_at=latest.created_at,
             top_factors=[
-                {
-                    "id": exp.id,
-                    "feature_name": exp.feature_name,
-                    "feature_label": exp.feature_label,
-                    "value_display": exp.value_display,
-                    "contribution": exp.contribution,
-                    "direction": exp.direction,
-                    "impact_text": exp.impact_text
-                }
+                ExplanationOut(
+                    id=exp.id,
+                    feature_name=exp.feature_name,
+                    feature_label=exp.feature_label,
+                    value_display=exp.value_display,
+                    contribution=exp.contribution,
+                    direction=exp.direction,
+                    impact_text=exp.impact_text
+                )
                 for exp in latest.explanations
-            ]
+            ],
+            recommendations=[RecommendationOut.model_validate(rc) for rc in project.recommendations]
         )
         detail.latest_prediction = pred_out
 
     return detail
-
-
-@router.patch("/{project_id}", response_model=ProjectDetailOut)
-def update_project(
-    project_id: int,
-    data: ProjectUpdate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    project = db.query(Project).filter(Project.id == project_id).first()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-
-    update_dict = data.model_dump(exclude_unset=True)
-    for k, v in update_dict.items():
-        setattr(project, k, v)
-
-    # Log audit
-    audit = AuditLog(
-        user_email=current_user.email,
-        action="UPDATE_PROJECT",
-        entity_type="Project",
-        entity_id=str(project.id),
-        details=f"Updated fields: {', '.join(update_dict.keys())}"
-    )
-    db.add(audit)
-    db.commit()
-    db.refresh(project)
-
-    return get_project_detail(project.id, db)
 
 
 @router.post("/{project_id}/predict", response_model=PredictionOut)
@@ -313,15 +334,14 @@ def run_prediction(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    prob, risk_level, delay_days, explanations = predict_project_risk(project)
+    prob, risk_level, delay_days, explanations, recommendations = predict_project_risk(project)
 
-    # Save prediction
     pred = Prediction(
         project_id=project.id,
         probability=round(prob, 3),
         risk_level=risk_level,
         estimated_delay_days=delay_days,
-        model_version="xgb-v1.0.0"
+        model_version="xgb-v1.2.0"
     )
     db.add(pred)
     db.flush()
@@ -338,18 +358,33 @@ def run_prediction(
         )
         db.add(expl)
 
-    # Generate alert if elevated
+    # Refresh recommendations
+    db.query(Recommendation).filter(Recommendation.project_id == project.id, Recommendation.status == "SUGGESTED").delete()
+    saved_recs = []
+    for rec in recommendations:
+        recom = Recommendation(
+            project_id=project.id,
+            title=rec["title"],
+            category=rec["category"],
+            urgency=rec["urgency"],
+            expected_risk_reduction_pct=rec["expected_risk_reduction_pct"],
+            action_steps=rec["action_steps"],
+            status="SUGGESTED"
+        )
+        db.add(recom)
+        db.flush()
+        saved_recs.append(recom)
+
     if prob >= 0.70:
         alert = Alert(
             project_id=project.id,
             severity="CRITICAL" if prob >= 0.85 else "HIGH",
             alert_type="HIGH_DELAY_PROBABILITY",
-            message=f"Predictive model flagged project {project.project_code} with {risk_level} risk ({int(prob*100)}% delay probability).",
+            message=f"Predictive model flagged project {project.project_code} with {risk_level} risk ({int(prob*100)}% delay probability). Recommended: {recommendations[0]['title'] if recommendations else 'Immediate review'}.",
             status="ACTIVE"
         )
         db.add(alert)
 
-    # Audit log
     audit = AuditLog(
         user_email=current_user.email,
         action="RUN_PREDICTION",
@@ -368,8 +403,130 @@ def run_prediction(
         "estimated_delay_days": pred.estimated_delay_days,
         "model_version": pred.model_version,
         "created_at": pred.created_at,
-        "top_factors": explanations
+        "top_factors": explanations,
+        "recommendations": [RecommendationOut.model_validate(r) for r in saved_recs]
     }
+
+
+# Convert Recommendation to Action Plan (1-Click)
+@router.post("/{project_id}/recommendations/{rec_id}/adopt", response_model=ActionOut)
+def adopt_recommendation(
+    project_id: int,
+    rec_id: int,
+    req: RecommendationAdoptRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    recom = db.query(Recommendation).filter(Recommendation.id == rec_id, Recommendation.project_id == project_id).first()
+    if not recom:
+        raise HTTPException(status_code=404, detail="Recommendation not found")
+
+    project = db.query(Project).filter(Project.id == project_id).first()
+    current_prob = project.predictions[0].probability if project.predictions else 0.5
+
+    recom.status = "ADOPTED"
+    
+    action = Action(
+        project_id=project.id,
+        action_type=f"Adopted Recommendation: {recom.category}",
+        title=recom.title,
+        description=f"Action Steps: {recom.action_steps}",
+        assigned_to=req.assigned_to,
+        due_date=req.due_date,
+        status="OPEN",
+        initial_risk=current_prob
+    )
+    db.add(action)
+    db.commit()
+    db.refresh(action)
+    return action
+
+
+# Update Rehabilitation Progress
+@router.patch("/{project_id}/rehabilitation", response_model=RehabilitationOut)
+def update_rehabilitation(
+    project_id: int,
+    data: RehabilitationUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    rr = db.query(Rehabilitation).filter(Rehabilitation.project_id == project_id).first()
+    if not rr:
+        rr = Rehabilitation(
+            project_id=project.id,
+            total_families=project.household_count,
+            families_rehabilitated=data.families_rehabilitated,
+            pending_cases=max(0, project.household_count - data.families_rehabilitated),
+            progress_pct=round((data.families_rehabilitated / max(1, project.household_count)) * 100, 1),
+            status=data.status or "In Progress"
+        )
+        db.add(rr)
+    else:
+        rr.families_rehabilitated = data.families_rehabilitated
+        rr.pending_cases = max(0, rr.total_families - data.families_rehabilitated)
+        rr.progress_pct = round((data.families_rehabilitated / max(1, rr.total_families)) * 100, 1)
+        if data.status:
+            rr.status = data.status
+        if data.resettlement_site_status:
+            rr.resettlement_site_status = data.resettlement_site_status
+
+    db.commit()
+    db.refresh(rr)
+    return rr
+
+
+# Update Possession Parcels
+@router.patch("/{project_id}/possession", response_model=PossessionOut)
+def update_possession(
+    project_id: int,
+    data: PossessionUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    pos = db.query(Possession).filter(Possession.project_id == project_id).first()
+    if not pos:
+        raise HTTPException(status_code=404, detail="Possession record not found")
+
+    pos.acquired_parcels = data.acquired_parcels
+    pos.pending_parcels = max(0, pos.total_parcels - data.acquired_parcels)
+    if data.disputed_parcels is not None:
+        pos.disputed_parcels = data.disputed_parcels
+    if data.possession_status:
+        pos.possession_status = data.possession_status
+
+    db.commit()
+    db.refresh(pos)
+    return pos
+
+
+# Add Stakeholder Department
+@router.post("/{project_id}/stakeholders", response_model=StakeholderOut)
+def add_stakeholder(
+    project_id: int,
+    data: StakeholderCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    stk = Stakeholder(
+        project_id=project.id,
+        department_name=data.department_name,
+        pending_actions=data.pending_actions,
+        avg_response_days=data.avg_response_days,
+        responsiveness_score=data.responsiveness_score,
+        last_interaction=date.today()
+    )
+    db.add(stk)
+    db.commit()
+    db.refresh(stk)
+    return stk
 
 
 @router.post("/{project_id}/simulate", response_model=SimulationOut)
@@ -388,30 +545,6 @@ def simulate_scenario(
     return sim_result
 
 
-@router.post("/{project_id}/documents", response_model=DocumentOut)
-def add_document(
-    project_id: int,
-    data: DocumentCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    project = db.query(Project).filter(Project.id == project_id).first()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-
-    doc = Document(
-        project_id=project.id,
-        document_type=data.document_type,
-        title=data.title,
-        status=data.status,
-        remarks=data.remarks
-    )
-    db.add(doc)
-    db.commit()
-    db.refresh(doc)
-    return doc
-
-
 @router.patch("/{project_id}/documents/{doc_id}/approve", response_model=DocumentOut)
 def approve_document(
     project_id: int,
@@ -428,32 +561,6 @@ def approve_document(
     db.commit()
     db.refresh(doc)
     return doc
-
-
-@router.patch("/{project_id}/stages/{stage_id}", response_model=StageOut)
-def update_stage(
-    project_id: int,
-    stage_id: int,
-    data: StageUpdate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    stage = db.query(Stage).filter(Stage.id == stage_id, Stage.project_id == project_id).first()
-    if not stage:
-        raise HTTPException(status_code=404, detail="Stage not found")
-
-    if data.status is not None:
-        stage.status = data.status
-        if data.status == "Completed":
-            stage.completion_date = data.completion_date or date.today()
-    if data.days_in_stage is not None:
-        stage.days_in_stage = data.days_in_stage
-    if data.remarks is not None:
-        stage.remarks = data.remarks
-
-    db.commit()
-    db.refresh(stage)
-    return stage
 
 
 @router.patch("/{project_id}/compensation", response_model=CompensationOut)
@@ -482,11 +589,6 @@ def update_compensation(
     comp.disbursed_amount_cr = data.disbursed_amount_cr
     comp.pending_amount_cr = max(0.0, comp.total_amount_cr - data.disbursed_amount_cr)
     comp.disbursement_pct = round(min(100.0, (comp.disbursed_amount_cr / max(0.01, comp.total_amount_cr)) * 100.0), 1)
-    if data.beneficiary_count:
-        comp.beneficiary_count = data.beneficiary_count
-    if data.status:
-        comp.status = data.status
-
     project.compensation_paid_cr = data.disbursed_amount_cr
     db.commit()
     db.refresh(comp)

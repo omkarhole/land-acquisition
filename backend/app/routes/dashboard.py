@@ -1,14 +1,14 @@
 """
 Dashboard Analytics & Geospatial Risk Map Router for SIH26017.
+Updated with National R&R KPI and Predictive Recommendations aggregations.
 """
 
-from typing import List, Dict, Any
+from typing import List
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 from backend.app.database import get_db
-from backend.app.models.models import Project, Prediction, Alert, Action, Stage
+from backend.app.models.models import Project, Prediction, Alert, Action, Stage, Rehabilitation, Recommendation
 from backend.app.schemas.schemas import DashboardSummaryOut, GeoRiskPointOut
 
 router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
@@ -32,7 +32,9 @@ def get_dashboard_summary(db: Session = Depends(get_db)):
             "active_alerts_count": 0,
             "pending_actions_count": 0,
             "total_land_area_ha": 0.0,
-            "total_compensation_cr": 0.0
+            "total_compensation_cr": 0.0,
+            "national_rr_progress_pct": 0.0,
+            "active_recommendations_count": 0
         }
 
     low_count = 0
@@ -66,8 +68,13 @@ def get_dashboard_summary(db: Session = Depends(get_db)):
 
     active_alerts = db.query(Alert).filter(Alert.status == "ACTIVE").count()
     pending_actions = db.query(Action).filter(Action.status != "COMPLETED").count()
+    active_recs = db.query(Recommendation).filter(Recommendation.status == "SUGGESTED").count()
+    
     total_land = sum(p.land_area_hectares or 0.0 for p in projects)
     total_comp = sum(p.compensation_offered_cr or 0.0 for p in projects)
+
+    all_rr = db.query(Rehabilitation).all()
+    avg_rr = (sum(r.progress_pct for r in all_rr) / len(all_rr)) if all_rr else 54.0
 
     return {
         "total_projects": total_projects,
@@ -81,7 +88,9 @@ def get_dashboard_summary(db: Session = Depends(get_db)):
         "active_alerts_count": active_alerts,
         "pending_actions_count": pending_actions,
         "total_land_area_ha": round(total_land, 1),
-        "total_compensation_cr": round(total_comp, 1)
+        "total_compensation_cr": round(total_comp, 1),
+        "national_rr_progress_pct": round(avg_rr, 1),
+        "active_recommendations_count": active_recs
     }
 
 
@@ -120,7 +129,6 @@ def get_geo_risk_points(db: Session = Depends(get_db)):
 
 @router.get("/stage-bottlenecks")
 def get_stage_bottlenecks(db: Session = Depends(get_db)):
-    """Computes average days spent across all acquisition stages."""
     stages = db.query(Stage).all()
     stage_data = {}
     stage_benchmarks = {

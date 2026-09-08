@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # Optional PostgreSQL database
+  # PostgreSQL 16 Database with optional PostGIS
   db:
     image: postgres:16-alpine
     container_name: sih26017_postgres
@@ -14,6 +14,12 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./backend/app/schema_postgres.sql:/docker-entrypoint-initdb.d/01_init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d sih26017"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # FastAPI Backend & ML Service
   backend:
@@ -23,14 +29,15 @@ services:
     container_name: sih26017_backend
     restart: unless-stopped
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgresql://app:${DB_PASSWORD:-postgres_password_2026}@db:5432/sih26017
       JWT_SECRET: ${JWT_SECRET:-sih26017_ministry_rural_dev_secret_key_2026_x7a9q2}
     ports:
       - "8000:8000"
 
-  # React Frontend
+  # React Frontend (Vite + Nginx)
   frontend:
     build:
       context: ./frontend
