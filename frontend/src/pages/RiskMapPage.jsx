@@ -104,7 +104,7 @@ export const RiskMapPage = ({ onSelectProject }) => {
         <div>
           <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
             <MapPin className="w-5 h-5 text-blue-600" />
-            National Land Acquisition Geospatial Risk Map
+            GIS Map
           </h2>
           <p className="text-xs text-slate-500">
             Interactive district-level geospatial monitoring and delay vulnerability heatmap
