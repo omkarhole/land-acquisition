@@ -132,20 +132,64 @@ def create_project(
         forest_clearance_pending=data.forest_clearance_pending,
         railway_crossing_pending=data.railway_crossing_pending,
         district_delay_rate=0.28,
-        past_delay_count=1
+        past_delay_count=1,
+        # Land classification & jurisdiction
+        land_category=data.land_category,
+        notification_stage=data.notification_stage,
+        multi_village_jurisdiction=data.multi_village_jurisdiction,
+        # Legal & dispute flags
+        ownership_title_dispute=data.ownership_title_dispute,
+        court_litigation_pending=data.court_litigation_pending,
+        public_objections_filed=data.public_objections_filed,
+        # Acquisition progress metrics
+        days_elapsed_since_notification=data.days_elapsed_since_notification,
+        land_notified_pct=data.land_notified_pct,
+        award_declared_pct=data.award_declared_pct,
+        compensation_disbursed_pct=data.compensation_disbursed_pct,
+        physical_possession_pct=data.physical_possession_pct,
     )
+
+    # Determine target active stage order matching current_stage
+    target_stage_order = 1
+    selected_stage_str = (data.current_stage or "").lower()
+    for order, stage_name, _ in STANDARD_STAGES:
+        if stage_name.lower() in selected_stage_str or selected_stage_str in stage_name.lower() or f"stage {order}" in selected_stage_str:
+            target_stage_order = order
+            break
+
+    # Calculate overall progress % based on selected stage
+    stage_progress_map = {1: 15.0, 2: 30.0, 3: 50.0, 4: 70.0, 5: 85.0, 6: 95.0}
+    project.overall_progress_pct = stage_progress_map.get(target_stage_order, 15.0)
+
     db.add(project)
     db.flush()
 
-    # Create 6 stages
+    # Create 6 stages accurately reflecting selected current_stage
     for order, stage_name, duration in STANDARD_STAGES:
+        if order < target_stage_order:
+            st_status = "Completed"
+            st_days = duration
+            st_start = data.start_date
+            st_comp = data.start_date
+        elif order == target_stage_order:
+            st_status = "In Progress"
+            st_days = data.days_elapsed_since_notification if data.days_elapsed_since_notification > 0 else 15
+            st_start = data.start_date
+            st_comp = None
+        else:
+            st_status = "Pending"
+            st_days = 0
+            st_start = None
+            st_comp = None
+
         st = Stage(
             project_id=project.id,
             stage_order=order,
             stage_name=stage_name,
-            start_date=data.start_date if order == 1 else None,
-            status="In Progress" if order == 1 else "Pending",
-            days_in_stage=15 if order == 1 else 0
+            start_date=st_start,
+            completion_date=st_comp,
+            status=st_status,
+            days_in_stage=st_days
         )
         db.add(st)
 
@@ -593,3 +637,82 @@ def update_compensation(
     db.commit()
     db.refresh(comp)
     return comp
+
+
+# Update Single Stage
+@router.patch("/{project_id}/stages/{stage_id}", response_model=StageOut)
+def update_stage(
+    project_id: int,
+    stage_id: int,
+    data: StageUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    stage = db.query(Stage).filter(Stage.id == stage_id, Stage.project_id == project_id).first()
+    if not stage:
+        raise HTTPException(status_code=404, detail="Stage not found")
+
+    if data.status:
+        stage.status = data.status
+    if data.days_in_stage is not None:
+        stage.days_in_stage = data.days_in_stage
+    if data.completion_date:
+        stage.completion_date = data.completion_date
+    if data.remarks:
+        stage.remarks = data.remarks
+
+    # Synchronize project current_stage & progress
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if project:
+        in_prog = db.query(Stage).filter(Stage.project_id == project_id, Stage.status == "In Progress").first()
+        if in_prog:
+            project.current_stage = in_prog.stage_name
+            stage_progress_map = {1: 15.0, 2: 30.0, 3: 50.0, 4: 70.0, 5: 85.0, 6: 95.0}
+            project.overall_progress_pct = stage_progress_map.get(in_prog.stage_order, 15.0)
+
+    db.commit()
+    db.refresh(stage)
+    return stage
+
+
+# Update Project Details
+@router.patch("/{project_id}", response_model=ProjectDetailOut)
+def update_project(
+    project_id: int,
+    data: ProjectUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    update_dict = data.model_dump(exclude_unset=True)
+
+    # If current_stage was updated, synchronize stages table
+    if "current_stage" in update_dict and update_dict["current_stage"]:
+        new_stage_str = update_dict["current_stage"]
+        target_stage_order = 1
+        for order, stage_name, _ in STANDARD_STAGES:
+            if stage_name.lower() in new_stage_str.lower() or new_stage_str.lower() in stage_name.lower() or f"stage {order}" in new_stage_str.lower():
+                target_stage_order = order
+                break
+
+        for st in project.stages:
+            if st.stage_order < target_stage_order:
+                st.status = "Completed"
+            elif st.stage_order == target_stage_order:
+                st.status = "In Progress"
+            else:
+                st.status = "Pending"
+
+        stage_progress_map = {1: 15.0, 2: 30.0, 3: 50.0, 4: 70.0, 5: 85.0, 6: 95.0}
+        if "overall_progress_pct" not in update_dict:
+            project.overall_progress_pct = stage_progress_map.get(target_stage_order, 15.0)
+
+    for k, v in update_dict.items():
+        setattr(project, k, v)
+
+    db.commit()
+    db.refresh(project)
+    return get_project_detail(project.id, db)
