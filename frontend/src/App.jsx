@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
+import { Footer } from './components/Footer';
 import { Sidebar } from './components/Sidebar';
 import { DashboardPage } from './pages/DashboardPage';
 import { RiskMapPage } from './pages/RiskMapPage';
@@ -46,6 +47,7 @@ function MainApp() {
   const [activeTab, setActiveTabState] = useState(getTabFromPath);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [activeAlertsCount, setActiveAlertsCount] = useState(0);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Wrapper that also updates the browser URL
   const setActiveTab = (tab) => {
@@ -114,21 +116,25 @@ function MainApp() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         alertCount={activeAlertsCount}
+        onMenuToggle={() => setSidebarOpen((open) => !open)}
       />
 
-      <div className="flex-1 flex">
+      <div className="flex min-h-0 flex-1">
         <div className="no-print">
           <Sidebar
             activeTab={activeTab}
+            isOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
             setActiveTab={(tab) => {
               setActiveTab(tab);
               if (tab !== 'project-detail') setSelectedProjectId(null);
+              setSidebarOpen(false);
             }}
             alertCount={activeAlertsCount}
           />
         </div>
 
-        <main className="flex-1 p-6 max-w-7xl mx-auto w-full overflow-y-auto">
+        <main className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-6">
           {activeTab === 'dashboard' && (
             <DashboardPage
               onSelectProject={handleSelectProject}
@@ -172,6 +178,7 @@ function MainApp() {
           )}
         </main>
       </div>
+      <Footer setActiveTab={setActiveTab} />
     </div>
   );
 }

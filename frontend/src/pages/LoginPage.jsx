@@ -59,7 +59,7 @@ export const LoginPage = ({ onLoginSuccess }) => {
               </div>
               <div>
                 <span className="font-extrabold text-lg tracking-tight text-white block">
-                  SIH26017
+                  BhoomiGuard
                 </span>
                 <span className="text-[11px] text-blue-300 font-medium">
                   Smart India Hackathon 2026
