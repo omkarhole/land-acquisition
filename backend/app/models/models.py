@@ -62,6 +62,23 @@ class Project(Base):
     district_delay_rate = Column(Float, default=0.25)
     past_delay_count = Column(Integer, default=0)
 
+    # Land classification & jurisdiction
+    land_category = Column(String(100), nullable=True)              # e.g. Private Agricultural, Government Wasteland
+    notification_stage = Column(String(100), nullable=True)         # e.g. Pre-Notification, Section 11, Section 19
+    multi_village_jurisdiction = Column(Boolean, default=False)     # Spans multiple villages/talukas
+
+    # Legal & dispute flags
+    ownership_title_dispute = Column(Boolean, default=False)        # Title / heirship dispute pending
+    court_litigation_pending = Column(Boolean, default=False)       # LARR Section 64 court litigation
+    public_objections_filed = Column(Boolean, default=False)        # Formal objections filed under Sec 15
+
+    # Acquisition progress metrics
+    days_elapsed_since_notification = Column(Integer, default=0)    # Calendar days since first notification
+    land_notified_pct = Column(Float, default=0.0)                  # % of total area under notification
+    award_declared_pct = Column(Float, default=0.0)                 # % area for which award is declared
+    compensation_disbursed_pct = Column(Float, default=0.0)         # % compensation amount disbursed
+    physical_possession_pct = Column(Float, default=0.0)            # % land physically handed over
+
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

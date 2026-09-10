@@ -297,6 +297,20 @@ class ProjectCreate(BaseModel):
     utility_shift_pending: bool = False
     forest_clearance_pending: bool = False
     railway_crossing_pending: bool = False
+    # Land classification & jurisdiction
+    land_category: Optional[str] = None
+    notification_stage: Optional[str] = None
+    multi_village_jurisdiction: bool = False
+    # Legal & dispute flags
+    ownership_title_dispute: bool = False
+    court_litigation_pending: bool = False
+    public_objections_filed: bool = False
+    # Acquisition progress metrics
+    days_elapsed_since_notification: int = 0
+    land_notified_pct: float = Field(0.0, ge=0.0, le=100.0)
+    award_declared_pct: float = Field(0.0, ge=0.0, le=100.0)
+    compensation_disbursed_pct: float = Field(0.0, ge=0.0, le=100.0)
+    physical_possession_pct: float = Field(0.0, ge=0.0, le=100.0)
 
 class ProjectUpdate(BaseModel):
     title: Optional[str] = None
@@ -311,6 +325,20 @@ class ProjectUpdate(BaseModel):
     utility_shift_pending: Optional[bool] = None
     forest_clearance_pending: Optional[bool] = None
     railway_crossing_pending: Optional[bool] = None
+    # Land classification & jurisdiction
+    land_category: Optional[str] = None
+    notification_stage: Optional[str] = None
+    multi_village_jurisdiction: Optional[bool] = None
+    # Legal & dispute flags
+    ownership_title_dispute: Optional[bool] = None
+    court_litigation_pending: Optional[bool] = None
+    public_objections_filed: Optional[bool] = None
+    # Acquisition progress metrics
+    days_elapsed_since_notification: Optional[int] = None
+    land_notified_pct: Optional[float] = Field(None, ge=0.0, le=100.0)
+    award_declared_pct: Optional[float] = Field(None, ge=0.0, le=100.0)
+    compensation_disbursed_pct: Optional[float] = Field(None, ge=0.0, le=100.0)
+    physical_possession_pct: Optional[float] = Field(None, ge=0.0, le=100.0)
 
 class ProjectOut(BaseModel):
     id: int
@@ -334,6 +362,20 @@ class ProjectOut(BaseModel):
     overall_progress_pct: float
     objection_count: int
     court_stay_flag: bool
+    # Land classification & jurisdiction
+    land_category: Optional[str] = None
+    notification_stage: Optional[str] = None
+    multi_village_jurisdiction: bool = False
+    # Legal & dispute flags
+    ownership_title_dispute: bool = False
+    court_litigation_pending: bool = False
+    public_objections_filed: bool = False
+    # Acquisition progress metrics
+    days_elapsed_since_notification: int = 0
+    land_notified_pct: float = 0.0
+    award_declared_pct: float = 0.0
+    compensation_disbursed_pct: float = 0.0
+    physical_possession_pct: float = 0.0
     latest_prediction: Optional[PredictionOut] = None
 
     class Config:

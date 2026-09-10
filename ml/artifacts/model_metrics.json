@@ -35,14 +35,6 @@
       "Precision": 0.959,
       "Recall": 0.9936,
       "Brier_Score": 0.0384
-    },
-    "LightGBM": {
-      "ROC_AUC": 0.9494,
-      "PR_AUC": 0.9968,
-      "F1_Score": 0.9747,
-      "Precision": 0.9666,
-      "Recall": 0.983,
-      "Brier_Score": 0.0418
     }
   },
   "best_metrics": {
