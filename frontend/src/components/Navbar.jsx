@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Shield, User, LogOut, ChevronDown, Sparkles, Building2, Bell } from 'lucide-react';
+import { Shield, LogOut, ChevronDown, Building2, Bell, Menu } from 'lucide-react';
 
-export const Navbar = ({ activeTab, setActiveTab, alertCount = 0 }) => {
+export const Navbar = ({ activeTab, setActiveTab, alertCount = 0, onMenuToggle }) => {
   const { user, switchRole, logout } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -20,22 +20,27 @@ export const Navbar = ({ activeTab, setActiveTab, alertCount = 0 }) => {
         <div className="flex items-center justify-between h-16">
           
           {/* Logo & Branding */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              aria-label="Open navigation menu"
+              onClick={onMenuToggle}
+              className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 md:hidden"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
             <div className="w-10 h-10 rounded-lg bg-gradient-to-tr from-gov-blue to-indigo-600 flex items-center justify-center text-white font-bold shadow-md">
               <Building2 className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-slate-900 tracking-tight text-base sm:text-lg">
-                  SIH26017 <span className="text-blue-600 font-semibold">| Prerna-LA</span>
+                  BhoomiGuard
                 </span>
                 <span className="bg-emerald-100 text-emerald-800 text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">
                   AI Early-Warning
                 </span>
               </div>
-              <p className="text-xs text-slate-500 hidden sm:block">
-                Ministry of Rural Development • Department of Land Resources
-              </p>
             </div>
           </div>
 
