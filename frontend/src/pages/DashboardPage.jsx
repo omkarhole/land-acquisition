@@ -269,6 +269,63 @@ export const DashboardPage = ({ onSelectProject, onNavigate }) => {
       .sort((a, b) => b.count - a.count);
   }, [projects]);
 
+  // 3. Formatted Stage Bottleneck Data for Horizontal Analysis
+  const formattedBottlenecks = useMemo(() => {
+    const shortNames = {
+      'Stage 1: Preliminary Survey & SIA': 'Stage 1: Survey & SIA',
+      'Stage 2: Section 11 Notification': 'Stage 2: Sec 11 Gazette',
+      'Stage 3: Section 15 Hearing & Objections': 'Stage 3: Sec 15 Objections',
+      'Stage 4: Section 19 Declaration': 'Stage 4: Sec 19 Declaration',
+      'Stage 5: Valuation & Compensation Award': 'Stage 5: Valuation & Award',
+      'Stage 6: Land Possession & Handover': 'Stage 6: Land Possession'
+    };
+
+    return bottlenecks.map((item) => {
+      const isExceeded = item.avg_days > item.benchmark_days;
+      const diff = Math.round((item.avg_days - item.benchmark_days) * 10) / 10;
+      return {
+        ...item,
+        shortName: shortNames[item.stage_name] || item.stage_name,
+        diffDays: diff,
+        isExceeded
+      };
+    });
+  }, [bottlenecks]);
+
+  const maxBottleneckStage = useMemo(() => {
+    if (!bottlenecks || bottlenecks.length === 0) return null;
+    return [...bottlenecks].sort((a, b) => b.delay_exceeded_days - a.delay_exceeded_days)[0];
+  }, [bottlenecks]);
+
+  // Custom Stage Bottleneck Tooltip
+  const CustomBottleneckTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      const d = payload[0].payload;
+      return (
+        <div className="bg-slate-900 text-white p-3.5 rounded-xl shadow-2xl text-xs space-y-1.5 min-w-[240px] border border-slate-700">
+          <p className="font-extrabold text-blue-300 text-sm">{d.stage_name}</p>
+          <div className="pt-2 border-t border-slate-700 space-y-1.5">
+            <div className="flex justify-between text-slate-300">
+              <span>Average Actual Duration:</span>
+              <strong className="text-white font-mono">{d.avg_days} Days</strong>
+            </div>
+            <div className="flex justify-between text-slate-300">
+              <span>Statutory LARR Benchmark:</span>
+              <strong className="text-slate-300 font-mono">{d.benchmark_days} Days</strong>
+            </div>
+            <div className="flex justify-between pt-1 border-t border-slate-800">
+              <span>Variance Status:</span>
+              <strong className={`font-mono font-bold ${d.isExceeded ? 'text-rose-400' : 'text-emerald-400'}`}>
+                {d.isExceeded ? `⚠️ +${d.diffDays} Days Exceeded` : `✓ On Track (${Math.abs(d.diffDays)}d Buffer)`}
+              </strong>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -451,7 +508,7 @@ export const DashboardPage = ({ onSelectProject, onNavigate }) => {
         </div>
       </div>
 
-      {/* KPI Cards Row */}
+      {/*   KPI Cards Row */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         
         {/* Card 1: Total Projects */}
@@ -525,7 +582,7 @@ export const DashboardPage = ({ onSelectProject, onNavigate }) => {
         </div>
 
       </div>
-
+    
       {/* ── STACKED BAR CHART: Project Risk Distribution by State / District ── */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
         
@@ -677,8 +734,132 @@ export const DashboardPage = ({ onSelectProject, onNavigate }) => {
           )}
         </div>
       </div>
+      {/* Analytics Charts Grid: Stage Bottlenecks & Donut */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+      {/* Chart 1: Upgraded LARR 2013 Statutory Stage Duration vs Benchmark */}
+        <div className="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-3">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-blue-600" />
+                LARR 2013 Statutory Stage Duration vs Benchmark
+              </h3>
+              <p className="text-xs text-slate-500">
+                Average actual days spent in each acquisition stage vs statutory LARR SLA timelines
+              </p>
+            </div>
+            <span className="text-[11px] font-bold bg-amber-50 text-amber-800 px-2.5 py-1 rounded-full border border-amber-200">
+              Bottleneck Radar
+            </span>
+          </div>
 
-      {/* ── NEW ROW: Sector-Wise Projects & Categorical Delay Drivers ── */}
+          <div className="h-72 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                layout="vertical"
+                data={formattedBottlenecks}
+                margin={{ top: 10, right: 25, left: 10, bottom: 10 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                <XAxis
+                  type="number"
+                  tick={{ fontSize: 11, fill: '#64748b' }}
+                  unit=" Days"
+                />
+                <YAxis
+                  type="category"
+                  dataKey="shortName"
+                  tick={{ fontSize: 11, fill: '#334155', fontWeight: 600 }}
+                  width={150}
+                />
+                <Tooltip content={<CustomBottleneckTooltip />} />
+                <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                <Bar
+                  dataKey="avg_days"
+                  name="Average Actual Days"
+                  radius={[0, 6, 6, 0]}
+                >
+                  {formattedBottlenecks.map((entry, index) => (
+                    <Cell key={`bn-cell-${index}`} fill={entry.isExceeded ? '#f43f5e' : '#3b82f6'} />
+                  ))}
+                </Bar>
+                <Bar
+                  dataKey="benchmark_days"
+                  name="Statutory LARR Benchmark"
+                  fill="#cbd5e1"
+                  radius={[0, 6, 6, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between text-xs gap-2">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block" />
+              <span className="text-slate-600 font-medium">Exceeds Benchmark (Red)</span>
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block ml-2" />
+              <span className="text-slate-600 font-medium">Within SLA (Blue)</span>
+            </div>
+            {maxBottleneckStage && (
+              <div className="font-bold text-slate-800 bg-slate-50 px-2.5 py-1 rounded border border-slate-200">
+                Top Delay Stage: <span className="text-rose-600">{maxBottleneckStage.stage_name} ({maxBottleneckStage.avg_days}d)</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Chart 2: Risk Category Distribution Donut */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <h3 className="text-sm font-bold text-slate-900 mb-1">
+              National Project Risk Classification
+            </h3>
+            <p className="text-xs text-slate-500">
+              Breakdown by calibrated delay probability bands
+            </p>
+          </div>
+
+          <div className="h-56 relative flex items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={riskPieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={55}
+                  outerRadius={80}
+                  paddingAngle={4}
+                  dataKey="value"
+                >
+                  {riskPieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span className="text-2xl font-extrabold text-slate-900">{summary?.total_projects}</span>
+              <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Projects</span>
+            </div>
+          </div>
+
+          <div className="space-y-1.5 pt-2 border-t border-slate-100">
+            {riskPieData.map((item, idx) => (
+              <div key={idx} className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                  <span className="text-slate-600">{item.name}</span>
+                </div>
+                <span className="font-bold text-slate-900">{item.value} Projects</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
+      {/* ── SECTOR-WISE PROJECTS & CATEGORICAL DELAY DRIVERS ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Chart 1: Sector-Wise Project Distribution */}
@@ -806,115 +987,8 @@ export const DashboardPage = ({ onSelectProject, onNavigate }) => {
             </span>
           </div>
         </div>
-
       </div>
 
-      {/* Analytics Charts Grid: Stage Bottlenecks & Donut */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Chart 1: Stage Bottleneck Analysis */}
-        <div className="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-blue-600" />
-                LARR 2013 Statutory Stage Duration vs Benchmark
-              </h3>
-              <p className="text-xs text-slate-500">
-                Average actual days spent in each acquisition stage vs statutory timelines
-              </p>
-            </div>
-            <span className="text-xs bg-amber-50 text-amber-800 font-bold px-2.5 py-1 rounded-full border border-amber-200">
-              Bottleneck Detection
-            </span>
-          </div>
-
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={bottlenecks} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="stage_name" tick={{ fontSize: 10 }} interval={0} angle={-15} textAnchor="end" />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      const d = payload[0].payload;
-                      return (
-                        <div className="bg-slate-900 text-white p-2.5 rounded-lg shadow-xl text-xs">
-                          <p className="font-bold">{d.stage_name}</p>
-                          <p className="text-amber-400 mt-1">Average Duration: {d.avg_days} days</p>
-                          <p className="text-slate-400">Benchmark: {d.benchmark_days} days</p>
-                          {d.delay_exceeded_days > 0 && (
-                            <p className="text-rose-400 font-semibold mt-1">
-                              ⚠️ Exceeds Benchmark by +{d.delay_exceeded_days} days
-                            </p>
-                          )}
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-                <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '15px' }} />
-                <Bar dataKey="avg_days" name="Average Actual Days" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="benchmark_days" name="Statutory LARR Benchmark" fill="#cbd5e1" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Chart 2: Risk Category Distribution Donut */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-          <div>
-            <h3 className="text-sm font-bold text-slate-900 mb-1">
-              National Project Risk Classification
-            </h3>
-            <p className="text-xs text-slate-500">
-              Breakdown by calibrated delay probability bands
-            </p>
-          </div>
-
-          <div className="h-56 relative flex items-center justify-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={riskPieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={55}
-                  outerRadius={80}
-                  paddingAngle={4}
-                  dataKey="value"
-                >
-                  {riskPieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-2xl font-extrabold text-slate-900">{summary?.total_projects}</span>
-              <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Projects</span>
-            </div>
-          </div>
-
-          <div className="space-y-1.5 pt-2 border-t border-slate-100">
-            {riskPieData.map((item, idx) => (
-              <div key={idx} className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                  <span className="text-slate-600">{item.name}</span>
-                </div>
-                <span className="font-bold text-slate-900">{item.value} Projects</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-      </div>
-
-      {/* Two-Column Lower Grid: High-Risk Projects & Early Warning Alerts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* High Risk Projects Requiring Attention */}
