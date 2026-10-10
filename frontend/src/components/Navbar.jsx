@@ -15,9 +15,9 @@ export const Navbar = ({ activeTab, setActiveTab, alertCount = 0, onMenuToggle }
   ];
 
   return (
-    <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+    <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 shadow-[0_4px_20px_rgba(15,23,42,0.04)] backdrop-blur-xl">
+      <div className="mx-auto max-w-[1600px] px-3 sm:px-6 lg:px-8">
+        <div className="flex h-[4.5rem] items-center justify-between">
           
           {/* Logo & Branding */}
           <div className="flex items-center gap-2 sm:gap-3">
@@ -25,19 +25,20 @@ export const Navbar = ({ activeTab, setActiveTab, alertCount = 0, onMenuToggle }
               type="button"
               aria-label="Open navigation menu"
               onClick={onMenuToggle}
-              className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 md:hidden"
+              className="focus-ring rounded-xl p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 md:hidden"
             >
               <Menu className="h-5 w-5" />
             </button>
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-tr from-gov-blue to-indigo-600 flex items-center justify-center text-white font-bold shadow-md">
+            <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-700 via-indigo-700 to-slate-900 text-white shadow-lg shadow-blue-900/20">
               <Building2 className="w-5 h-5" />
+              <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-400" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-slate-900 tracking-tight text-base sm:text-lg">
                   BhoomiGuard
                 </span>
-                <span className="bg-emerald-100 text-emerald-800 text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                <span className="hidden rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-700 sm:inline-flex">
                   AI Early-Warning
                 </span>
               </div>
@@ -50,7 +51,7 @@ export const Navbar = ({ activeTab, setActiveTab, alertCount = 0, onMenuToggle }
             {/* Quick Alerts Button */}
             <button
               onClick={() => setActiveTab('alerts')}
-              className="relative p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+              className="focus-ring relative rounded-xl p-2.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
               title="View Early Warning Alerts"
             >
               <Bell className="w-5 h-5" />
@@ -65,7 +66,7 @@ export const Navbar = ({ activeTab, setActiveTab, alertCount = 0, onMenuToggle }
             <div className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 bg-slate-50 hover:bg-slate-100 transition-all text-left"
+                className="focus-ring flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-left transition-all hover:border-slate-300 hover:bg-slate-50 sm:px-3"
               >
                 <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">
                   {user?.name?.charAt(0) || 'U'}
