@@ -65,14 +65,14 @@ export const ModelGovernancePage = () => {
   };
 
   return (
-    <div className="space-y-6 pb-16">
+    <div className="mx-auto max-w-[1600px] space-y-6 pb-16">
       
       {/* Header */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="surface-card flex flex-col gap-4 bg-gradient-to-br from-white to-indigo-50/30 p-6 md:flex-row md:items-center md:justify-between">
         <div>
           <div className="flex items-center gap-2">
             <BrainCircuit className="w-5 h-5 text-indigo-600" />
-            <h1 className="text-xl font-extrabold text-slate-900">
+            <h1 className="text-xl font-extrabold tracking-tight text-slate-950">
               Machine Learning Model Card & AI Governance
             </h1>
             <span className="bg-emerald-50 text-emerald-800 text-xs font-bold px-2.5 py-0.5 rounded-full">
@@ -91,19 +91,19 @@ export const ModelGovernancePage = () => {
 
       {/* Model Benchmark Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div className="surface-card p-4">
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">ROC-AUC Score</span>
           <div className="text-2xl font-extrabold text-blue-600 mt-1">{metrics.ROC_AUC}</div>
           <span className="text-[10px] text-emerald-600 font-semibold">High Discrimination</span>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div className="surface-card p-4">
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">PR-AUC Score</span>
           <div className="text-2xl font-extrabold text-indigo-600 mt-1">{metrics.PR_AUC}</div>
           <span className="text-[10px] text-slate-500">Precision-Recall Quality</span>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div className="surface-card p-4">
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Delay Recall</span>
           <div className="text-2xl font-extrabold text-emerald-600 mt-1">
             {Math.round(metrics.Recall * 100)}%
@@ -111,13 +111,13 @@ export const ModelGovernancePage = () => {
           <span className="text-[10px] text-slate-500">99%+ Delayed Projects Caught</span>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div className="surface-card p-4">
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">F1-Score</span>
           <div className="text-2xl font-extrabold text-purple-600 mt-1">{metrics.F1_Score}</div>
           <span className="text-[10px] text-slate-500">Balanced Harmonic Mean</span>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div className="surface-card p-4">
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Precision</span>
           <div className="text-2xl font-extrabold text-slate-800 mt-1">
             {Math.round(metrics.Precision * 100)}%
@@ -125,7 +125,7 @@ export const ModelGovernancePage = () => {
           <span className="text-[10px] text-slate-500">Low False Alarm Rate</span>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div className="surface-card p-4">
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Brier Score</span>
           <div className="text-2xl font-extrabold text-emerald-600 mt-1">{metrics.Brier_Score}</div>
           <span className="text-[10px] text-slate-500">Well-Calibrated Probabilities</span>
@@ -136,7 +136,7 @@ export const ModelGovernancePage = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Global Feature Importances */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="surface-card p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
@@ -160,7 +160,7 @@ export const ModelGovernancePage = () => {
         </div>
 
         {/* Ethical Boundaries & Decision Support Principles */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div className="surface-card flex flex-col justify-between p-5">
           <div>
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 mb-2">
               <ShieldCheck className="w-4 h-4 text-emerald-600" />

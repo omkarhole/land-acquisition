@@ -97,12 +97,12 @@ export const RiskMapPage = ({ onSelectProject }) => {
   }
 
   return (
-    <div className="space-y-4 pb-8">
+    <div className="mx-auto max-w-[1600px] space-y-5 pb-8">
       
       {/* Header & Filter Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+      <div className="surface-card flex flex-wrap items-center justify-between gap-4 bg-gradient-to-br from-white to-blue-50/30 p-4">
         <div>
-          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <h2 className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-slate-950">
             <MapPin className="w-5 h-5 text-blue-600" />
             GIS Map
           </h2>
@@ -150,7 +150,7 @@ export const RiskMapPage = ({ onSelectProject }) => {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-[650px]">
         
         {/* Left Side: Map Container */}
-        <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden relative">
+        <div className="surface-card relative overflow-hidden lg:col-span-3">
           <MapContainer
             center={[21.5, 78.9629]}
             zoom={5}
@@ -219,7 +219,7 @@ export const RiskMapPage = ({ onSelectProject }) => {
         </div>
 
         {/* Right Side: Project Quick Selector */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col justify-between overflow-hidden">
+        <div className="surface-card flex flex-col justify-between overflow-hidden p-4">
           <div className="border-b border-slate-100 pb-3 mb-3">
             <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
               Mapped Projects ({filteredPoints.length})
