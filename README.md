@@ -15,7 +15,7 @@
 ---
 
 ## 🎯 Problem Overview & Value Proposition
-Land acquisition under the **RFCTLARR Act 2013** is one of the most complex workflows in major infrastructure execution (Highways, High-Speed Rail, DFCs, Irrigation, Smart Cities). Current monitoring is reactive: project delays are recognized only after deadlines have elapsed.
+Land acquisition  is one of the most complex workflows in major infrastructure execution (Highways, High-Speed Rail, DFCs, Irrigation, Smart Cities). Current monitoring is reactive: project delays are recognized only after deadlines have elapsed.
 
 **Prerna-LA (SIH26017)** transforms reactive monitoring into a proactive, transparent decision-support system:
 1. **Predicts Timeline Slippage**: Estimates calibrated delay probability ($0-100\%$) and estimated delay days months ahead.
