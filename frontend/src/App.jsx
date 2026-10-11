@@ -111,7 +111,7 @@ function MainApp() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col font-sans">
+    <div className="app-canvas min-h-screen flex flex-col font-sans">
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -134,7 +134,7 @@ function MainApp() {
           />
         </div>
 
-        <main className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-6">
+        <main className="min-w-0 flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
           {activeTab === 'dashboard' && (
             <DashboardPage
               onSelectProject={handleSelectProject}

@@ -57,13 +57,13 @@ export const AlertsPage = ({ onSelectProject }) => {
   });
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="mx-auto max-w-[1600px] space-y-6 pb-12">
       
       {/* Header */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="surface-card flex flex-col gap-4 bg-gradient-to-br from-white to-rose-50/30 p-6 md:flex-row md:items-center md:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+            <h1 className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-slate-950">
               <ShieldAlert className="w-5 h-5 text-rose-600" />
               Early-Warning Alert Triage Center
             </h1>
@@ -99,7 +99,7 @@ export const AlertsPage = ({ onSelectProject }) => {
         {loading ? (
           <div className="py-20 text-center text-xs font-bold text-slate-500">Loading alerts...</div>
         ) : filteredAlerts.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-500">
+          <div className="surface-card p-12 text-center text-slate-500">
             <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2 opacity-60" />
             <p className="text-sm font-bold text-slate-800">No {statusFilter.toLowerCase()} alerts found.</p>
             <p className="text-xs text-slate-400 mt-1">All monitored projects are within healthy operational thresholds.</p>

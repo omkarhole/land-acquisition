@@ -116,14 +116,14 @@ export const ProjectsPage = ({ onSelectProject }) => {
   const hasFilters = Boolean(search || riskFilter || stateFilter || sectorFilter);
 
   return (
-    <div className="space-y-6 pb-16 max-w-7xl mx-auto px-4 sm:px-6">
+    <div className="mx-auto max-w-[1600px] space-y-6 pb-16">
       
       {/* 1. Header Banner */}
-      <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/90 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="surface-card flex flex-col gap-6 bg-gradient-to-br from-white to-blue-50/40 p-6 sm:p-8 md:flex-row md:items-center md:justify-between">
         <div>
           <div className="flex items-center gap-2.5">
             <div className="p-2 bg-blue-600 text-white rounded-xl shadow-md">
-              <Layers className="w-5 h-5" />
+              <Layers className="h-5 w-5" />
             </div>
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">
               National Land Acquisition Registry
@@ -139,7 +139,7 @@ export const ProjectsPage = ({ onSelectProject }) => {
 
         <button
           onClick={() => setIsModalOpen(true)}
-          className="px-5 py-3 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center gap-2 shrink-0"
+          className="focus-ring flex shrink-0 items-center gap-2 rounded-xl bg-slate-950 px-5 py-3 text-xs font-bold text-white shadow-md transition-all hover:bg-blue-700 hover:shadow-lg active:scale-95"
         >
           <Plus className="w-4 h-4" />
           Register Land Acquisition Case
@@ -150,7 +150,7 @@ export const ProjectsPage = ({ onSelectProject }) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
         {/* Card 1: Total Corridors */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+        <div className="surface-card p-5">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-[11px] font-bold uppercase tracking-wider">Total Corridors</span>
             <Building2 className="w-4 h-4 text-blue-600" />
@@ -160,7 +160,7 @@ export const ProjectsPage = ({ onSelectProject }) => {
         </div>
 
         {/* Card 2: Total Land Area */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+        <div className="surface-card p-5">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-[11px] font-bold uppercase tracking-wider">Land Under Acquisition</span>
             <Layers className="w-4 h-4 text-amber-500" />
@@ -172,7 +172,7 @@ export const ProjectsPage = ({ onSelectProject }) => {
         </div>
 
         {/* Card 3: Compensation Budget */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+        <div className="surface-card p-5">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-[11px] font-bold uppercase tracking-wider">Committed Awards</span>
             <IndianRupee className="w-4 h-4 text-emerald-600" />
@@ -184,7 +184,7 @@ export const ProjectsPage = ({ onSelectProject }) => {
         </div>
 
         {/* Card 4: Critical Delay Alerts with Mini Visual Meter */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+        <div className="surface-card border-rose-100 p-5">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-[11px] font-bold uppercase tracking-wider">Bottleneck Cases</span>
             <ShieldAlert className="w-4 h-4 text-rose-600" />

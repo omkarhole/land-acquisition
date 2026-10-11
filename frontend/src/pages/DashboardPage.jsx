@@ -165,27 +165,31 @@ export const DashboardPage = ({ onSelectProject, onNavigate }) => {
   }
 
   return (
-    <div className="space-y-6 pb-12 max-w-7xl mx-auto px-4 sm:px-6">
+    <div className="mx-auto max-w-[1600px] space-y-6 pb-12">
       
       {/* 1. Simple Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+      <div className="flex flex-col gap-5 pt-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Land Acquisition Analytics</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Overview of delays, statutory bottlenecks, and risk scoring</p>
+          <div className="eyebrow mb-2 flex items-center gap-2 text-blue-600">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            Ministry intelligence workspace
+          </div>
+          <h1 className="text-2xl font-extrabold tracking-tight text-slate-950 sm:text-3xl">Land acquisition overview</h1>
+          <p className="mt-1 text-sm text-slate-500">A live view of delay exposure, statutory bottlenecks, and intervention priorities.</p>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="px-3 py-2 bg-white text-slate-600 text-xs font-semibold rounded-lg border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 transition-colors"
+            className="focus-ring flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
             Refresh
           </button>
           <button
             onClick={() => onNavigate('map')}
-            className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors"
+            className="focus-ring flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
           >
             <MapPin className="w-3.5 h-3.5" />
             Map View
@@ -194,36 +198,36 @@ export const DashboardPage = ({ onSelectProject, onNavigate }) => {
       </div>
 
       {/* 2. Four Clean Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-200">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="surface-card group p-4 transition-all sm:p-5">
           <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Total Corridors</span>
-          <div className="text-2xl font-bold text-slate-900 mt-1">{summary?.total_projects || 0}</div>
+          <div className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900">{summary?.total_projects || 0}</div>
           <span className="text-[11px] text-slate-500 mt-0.5 block">{summary?.total_land_area_ha || 0} Ha Area</span>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200">
+        <div className="surface-card group border-rose-100 p-4 transition-all sm:p-5">
           <span className="text-[11px] font-semibold text-rose-500 uppercase tracking-wider block">Elevated Risk</span>
-          <div className="text-2xl font-bold text-rose-600 mt-1">
+          <div className="mt-1 text-2xl font-extrabold tracking-tight text-rose-600">
             {(summary?.high_risk_count || 0) + (summary?.critical_risk_count || 0)}
           </div>
           <span className="text-[11px] text-slate-500 mt-0.5 block">{summary?.critical_risk_count || 0} Critical (≥85%)</span>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200">
+        <div className="surface-card group p-4 transition-all sm:p-5">
           <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Avg Delay</span>
-          <div className="text-2xl font-bold text-slate-900 mt-1">+{summary?.avg_estimated_delay_days || 0}d</div>
+          <div className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900">+{summary?.avg_estimated_delay_days || 0}d</div>
           <span className="text-[11px] text-slate-500 mt-0.5 block">Estimated days slippage</span>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200">
+        <div className="surface-card group p-4 transition-all sm:p-5">
           <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Total Outlay</span>
-          <div className="text-2xl font-bold text-slate-900 mt-1">₹{summary?.total_compensation_cr || 0} Cr</div>
+          <div className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900">₹{summary?.total_compensation_cr || 0} Cr</div>
           <span className="text-[11px] text-slate-500 mt-0.5 block">Compensation allocated</span>
         </div>
       </div>
 
       {/* 3. Main Chart Area with Clean Underline Tabs */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-6">
+      <div className="surface-card space-y-6 p-4 sm:p-6">
         
         {/* Clean Underline Tab Switcher */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-1">
@@ -410,7 +414,7 @@ export const DashboardPage = ({ onSelectProject, onNavigate }) => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Priority Projects */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
+        <div className="surface-card space-y-3 p-5">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
               High Delay Risk Corridors
@@ -428,7 +432,7 @@ export const DashboardPage = ({ onSelectProject, onNavigate }) => {
               <div
                 key={p.id}
                 onClick={() => onSelectProject(p.id)}
-                className="p-3 rounded-xl border border-slate-100 hover:border-slate-300 hover:bg-slate-50/60 transition-colors cursor-pointer flex items-center justify-between gap-4"
+                className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-slate-100 p-3 transition-colors hover:border-blue-200 hover:bg-blue-50/40"
               >
                 <div>
                   <div className="flex items-center gap-2">
@@ -446,7 +450,7 @@ export const DashboardPage = ({ onSelectProject, onNavigate }) => {
         </div>
 
         {/* Active Alerts */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
+        <div className="surface-card space-y-3 p-5">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
               Active Alerts

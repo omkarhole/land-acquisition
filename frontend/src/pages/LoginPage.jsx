@@ -47,11 +47,13 @@ export const LoginPage = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 selection:bg-blue-600 selection:text-white">
-      <div className="max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-800">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#081225] p-4 selection:bg-blue-600 selection:text-white sm:p-8">
+      <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-blue-600/20 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-40 -right-20 h-[28rem] w-[28rem] rounded-full bg-indigo-500/15 blur-3xl" />
+      <div className="relative grid w-full max-w-5xl grid-cols-1 overflow-hidden rounded-[2rem] border border-white/10 bg-white shadow-2xl shadow-black/30 md:grid-cols-[0.95fr_1.05fr]">
         
         {/* Left Side: Brand Banner */}
-        <div className="bg-gradient-to-br from-gov-dark via-blue-950 to-slate-900 text-white p-8 flex flex-col justify-between">
+        <div className="flex flex-col justify-between bg-gradient-to-br from-[#162d5c] via-[#10234b] to-[#0b1429] p-8 text-white sm:p-10">
           <div>
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold shadow-lg shadow-blue-600/30">
@@ -67,7 +69,11 @@ export const LoginPage = ({ onLoginSuccess }) => {
               </div>
             </div>
 
-            <h2 className="text-2xl font-extrabold tracking-tight leading-snug">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-blue-300/20 bg-blue-400/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-blue-200">
+              <Sparkles className="h-3.5 w-3.5" />
+              Predict · Explain · Act
+            </div>
+            <h2 className="text-2xl font-extrabold leading-snug tracking-tight sm:text-3xl">
               Predictive Analytics System for Early Detection of Land Acquisition Delays
             </h2>
 
@@ -93,9 +99,10 @@ export const LoginPage = ({ onLoginSuccess }) => {
         </div>
 
         {/* Right Side: Login & Demo Accounts */}
-        <div className="p-8 bg-slate-50 flex flex-col justify-between">
+        <div className="flex flex-col justify-between bg-[#f8fafc] p-8 sm:p-10">
           <div>
-            <h3 className="text-lg font-bold text-slate-900">Official Portal Login</h3>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-600">Secure access</p>
+            <h3 className="mt-1 text-xl font-extrabold tracking-tight text-slate-950">Official portal login</h3>
             <p className="text-xs text-slate-500 mt-0.5">Enter credentials or choose a pre-configured role below</p>
 
             {error && (
@@ -113,7 +120,7 @@ export const LoginPage = ({ onLoginSuccess }) => {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="focus-ring w-full rounded-xl border border-slate-200 bg-white py-3 pl-9 pr-3 text-xs shadow-sm"
                     required
                   />
                 </div>
@@ -127,7 +134,7 @@ export const LoginPage = ({ onLoginSuccess }) => {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="focus-ring w-full rounded-xl border border-slate-200 bg-white py-3 pl-9 pr-3 text-xs shadow-sm"
                     required
                   />
                 </div>
@@ -136,7 +143,7 @@ export const LoginPage = ({ onLoginSuccess }) => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                className="focus-ring flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 py-3 text-xs font-bold text-white shadow-lg shadow-slate-900/15 transition-all hover:bg-blue-700 hover:shadow-blue-700/20"
               >
                 {loading ? 'Authenticating...' : 'Sign In to Decision Support System'}
                 <ArrowRight className="w-4 h-4" />
